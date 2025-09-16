@@ -1,9 +1,20 @@
 /* Root and App Styles */
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%);
+}
+
 #root {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
   min-height: 100vh;
+  background-attachment: fixed;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .app {
@@ -817,6 +828,306 @@
   color: #0c5460;
   margin: 0;
   font-weight: 500;
+}
+
+/* Landing Page Styles */
+.landing-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: linear-gradient(135deg, #10b981, #059669);
+  overflow: hidden;
+}
+
+.landing-container > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.landing-container canvas {
+  width: 100vw !important;
+  height: 100vh !important;
+  display: block !important;
+}
+
+/* Context Menu */
+.context-menu {
+  position: fixed;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2), 0 8px 25px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  z-index: 1000;
+  min-width: 200px;
+  overflow: hidden;
+  animation: contextMenuAppear 0.2s ease-out;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #1a1a1a;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+.context-menu-item:last-child {
+  border-bottom: none;
+}
+
+.context-menu-item:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%);
+  transform: translateX(5px);
+}
+
+.context-menu-icon {
+  margin-right: 0.75rem;
+  font-size: 1.2rem;
+}
+
+/* Back to Landing Button */
+.back-to-landing-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(52, 211, 153, 0.9) 100%);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.back-to-landing-btn:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+}
+
+/* Animations */
+@keyframes glow {
+  0% { text-shadow: 0 4px 20px rgba(16, 185, 129, 0.3); }
+  100% { text-shadow: 0 4px 30px rgba(52, 211, 153, 0.5), 0 0 40px rgba(16, 185, 129, 0.3); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes contextMenuAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Dialog Styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: dialogOverlayAppear 0.3s ease-out;
+}
+
+.dialog-box {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.98) 100%);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(16, 185, 129, 0.3), 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(16, 185, 129, 0.2);
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+  animation: dialogBoxAppear 0.3s ease-out;
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%);
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.dialog-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.1) 75%, transparent 75%);
+  background-size: 20px 20px;
+  opacity: 0.3;
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  z-index: 1;
+  position: relative;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1;
+  position: relative;
+}
+
+.dialog-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.dialog-content {
+  padding: 2rem;
+  text-align: center;
+}
+
+.dialog-content p {
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.dialog-btn {
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.dialog-btn.primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.dialog-btn.primary:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 50%, #10b981 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+}
+
+.dialog-btn.secondary {
+  background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #495057;
+  border: 2px solid rgba(16, 185, 129, 0.2);
+}
+
+.dialog-btn.secondary:hover {
+  background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Dialog Animations */
+@keyframes dialogOverlayAppear {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogBoxAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Landing Page Responsive */
+@media (max-width: 768px) {
+  .context-menu {
+    min-width: 180px;
+  }
+  
+  .context-menu-item {
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .dialog-box {
+    width: 95%;
+    max-width: 350px;
+  }
+  
+  .dialog-header {
+    padding: 1.2rem;
+  }
+  
+  .dialog-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .dialog-content {
+    padding: 1.5rem;
+  }
+  
+  .dialog-actions {
+    flex-direction: column;
+  }
+  
+  .dialog-btn {
+    width: 100%;
+  }
 }
 
 /* Responsive Design */
