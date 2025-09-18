@@ -43,6 +43,18 @@ const ResultsDisplay = ({
   }
 
   const severityInfo = getSeverityInfo(assessmentData.assessment_type, totalScore)
+  
+  // Get risk class based on score (0-10 scale)
+  const getRiskClass = (score: number) => {
+    if (score <= 3) return 'low-risk';
+    if (score <= 6) return 'moderate-risk';
+    return 'high-risk';
+  };
+  
+  // Calculate normalized score for 0-10 scale
+  const maxScore = assessmentData.responses.length * (assessmentData.assessment_type === 'PSS10' ? 4 : 3);
+  const normalizedScore = Math.round((totalScore / maxScore) * 10);
+  const riskClass = getRiskClass(normalizedScore);
 
   const getRecommendationText = (rec: string) => {
     const recommendations: { [key: string]: string } = {
@@ -72,9 +84,9 @@ const ResultsDisplay = ({
 
       <div className="score-section">
         <div className="score-display">
-          <div className="score-circle" style={{ borderColor: severityInfo.color }}>
+          <div className={`score-circle ${riskClass}`}>
             <span className="score-number">{totalScore}</span>
-            <span className="score-max">/{assessmentData.responses.length * (assessmentData.assessment_type === 'PSS10' ? 4 : 3)}</span>
+            <span className="score-max">/{maxScore}</span>
           </div>
           <div className="score-info">
             <h3 style={{ color: severityInfo.color }}>{severityInfo.level}</h3>

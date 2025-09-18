@@ -5,22 +5,22 @@
 
   /* Color Variables */
   --primary-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%);
-  --secondary-gradient: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
-  --accent-gradient: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(52, 211, 153, 0.05) 100%);
+  --secondary-gradient: linear-gradient(145deg, #3a3a3a 0%, #2d2d2d 100%);
+  --accent-gradient: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%);
   --text-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
   
   /* Shadow Variables */
-  --shadow-light: 0 4px 15px rgba(16, 185, 129, 0.08);
-  --shadow-medium: 0 8px 25px rgba(16, 185, 129, 0.15);
-  --shadow-heavy: 0 20px 40px rgba(16, 185, 129, 0.12);
+  --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.2);
+  --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.25);
+  --shadow-heavy: 0 20px 40px rgba(0, 0, 0, 0.3);
   
   /* Border Variables */
-  --border-light: 1px solid rgba(16, 185, 129, 0.1);
+  --border-light: 1px solid #444;
   --border-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
 
-  color-scheme: light;
-  color: #1a1a1a;
-  background: var(--primary-gradient);
+  color-scheme: dark;
+  color: #e0e0e0;
+  background: #1a1a1a;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,19 +30,14 @@
 
 a {
   font-weight: 500;
-  background: var(--text-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-decoration: inherit;
+  color: #10b981;
+  text-decoration: none;
   transition: all 0.3s ease;
 }
 a:hover {
-  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #34d399;
   transform: translateY(-1px);
+  text-decoration: underline;
 }
 
 body {
@@ -51,8 +46,9 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--primary-gradient);
+  background: #1a1a1a;
   background-attachment: fixed;
+  color: #e0e0e0;
 }
 
 h1 {
@@ -62,27 +58,31 @@ h1 {
 
 button {
   border-radius: 12px;
-  border: 2px solid transparent;
+  border: 2px solid #444;
   padding: 0.8em 1.5em;
   font-size: 1em;
   font-weight: 600;
   font-family: inherit;
-  background: var(--secondary-gradient);
-  color: #1a1a1a;
+  background: #2d2d2d;
+  color: #e0e0e0;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-light);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+
 button:hover {
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-medium);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: #10b981;
 }
+
 button:focus,
 button:focus-visible {
   outline: 2px solid rgba(16, 185, 129, 0.5);
   outline-offset: 2px;
+  border-color: #10b981;
 }
 
 /* Enhanced animations and effects */
@@ -92,7 +92,7 @@ button:focus-visible {
 }
 
 .shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), transparent);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
