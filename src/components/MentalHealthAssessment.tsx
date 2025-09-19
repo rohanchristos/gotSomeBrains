@@ -7,9 +7,10 @@ import UserContextForm from './UserContextForm'
 import ResultsDisplay from './ResultsDisplay'
 import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
+import SimpleChat from './chat/SimpleChat'
 import type { AssessmentData, MLResponse, UserContext } from '../types/assessment'
 
-type AssessmentType = 'PHQ9' | 'GAD7' | 'PSS10' | 'CustomML' | null
+type AssessmentType = 'PHQ9' | 'GAD7' | 'PSS10' | 'CustomML' | 'ChatDoctor' | null
 
 const MentalHealthAssessment = () => {
   const [currentAssessment, setCurrentAssessment] = useState<AssessmentType>(null)
@@ -19,6 +20,8 @@ const MentalHealthAssessment = () => {
   const [showResults, setShowResults] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [showAdminDashboard, setShowAdminDashboard] = useState(false)
+  const [showChat, setShowChat] = useState(false)
+  const [showDoctorDashboard, setShowDoctorDashboard] = useState(false)
 
   const handleAssessmentComplete = (data: AssessmentData | any) => {
     // Check if this is a backend response (has ml_response property)
@@ -50,6 +53,8 @@ const MentalHealthAssessment = () => {
     setShowResults(false)
     setShowAdminLogin(false)
     setShowAdminDashboard(false)
+    setShowChat(false)
+    setShowDoctorDashboard(false)
   }
 
   const handleAdminLogin = () => {
@@ -67,6 +72,23 @@ const MentalHealthAssessment = () => {
 
   const handleCloseAdminDashboard = () => {
     setShowAdminDashboard(false)
+  }
+
+  const handleChatWithDoctor = () => {
+    console.log('Chat with Doctor clicked');
+    setShowChat(true)
+  }
+
+  const handleCloseChat = () => {
+    setShowChat(false)
+  }
+
+  const handleDoctorPortal = () => {
+    setShowDoctorDashboard(true)
+  }
+
+  const handleCloseDoctorDashboard = () => {
+    setShowDoctorDashboard(false)
   }
 
   const exportData = () => {
@@ -161,6 +183,16 @@ const MentalHealthAssessment = () => {
           </span>
         </div>
         
+        {/* Chat with Doctor Card */}
+        <div className="assessment-card chat-card" onClick={handleChatWithDoctor}>
+          <h3>🩺 Chat with Doctor</h3>
+          <p>Real-time Medical Consultation</p>
+          <span className="assessment-description">
+            Connect with a qualified doctor for immediate support and guidance
+          </span>
+        </div>
+
+
         {/* Admin Portal Card */}
         <div className="assessment-card admin-card" onClick={handleAdminLogin}>
           <h3>🔐 Admin Portal</h3>
@@ -195,6 +227,13 @@ const MentalHealthAssessment = () => {
       {showAdminDashboard && (
         <AdminDashboard 
           onClose={handleCloseAdminDashboard}
+        />
+      )}
+
+      {/* Simple Chat Modal */}
+      {showChat && (
+        <SimpleChat 
+          onClose={handleCloseChat}
         />
       )}
     </div>

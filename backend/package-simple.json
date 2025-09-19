@@ -1,0 +1,15 @@
+{
+  "name": "simple-chat-server",
+  "version": "1.0.0",
+  "description": "Simple WebSocket chat server",
+  "main": "simple-chat-server.js",
+  "scripts": {
+    "start": "node simple-chat-server.js",
+    "dev": "node simple-chat-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2",
+    "express": "^4.21.2",
+    "cors": "^2.8.5"
+  }
+}
