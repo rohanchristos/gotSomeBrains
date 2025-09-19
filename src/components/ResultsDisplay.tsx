@@ -171,14 +171,18 @@ const ResultsDisplay = ({
       )}
 
       <div className="data-export">
-        <h3>Standardized Data Format</h3>
-        <p>Assessment data is formatted for ML integration and analysis:</p>
+        <h3>{assessmentData.assessment_type === 'CustomML' && (assessmentData as any).ml_response ? 'Backend Response' : 'Standardized Data Format'}</h3>
+        <p>{assessmentData.assessment_type === 'CustomML' && (assessmentData as any).ml_response 
+          ? 'Complete response received from the CustomML backend server:' 
+          : 'Assessment data is formatted for ML integration and analysis:'}</p>
         <pre className="json-preview">
-{JSON.stringify({
-  assessment_type: assessmentData.assessment_type,
-  responses: assessmentData.responses,
-  user_context: userContext
-}, null, 2)}
+{assessmentData.assessment_type === 'CustomML' && (assessmentData as any).ml_response 
+  ? JSON.stringify(assessmentData, null, 2)
+  : JSON.stringify({
+      assessment_type: assessmentData.assessment_type,
+      responses: assessmentData.responses,
+      user_context: userContext
+    }, null, 2)}
         </pre>
       </div>
 

@@ -2,11 +2,12 @@ import { useState } from 'react'
 import PHQ9Assessment from './assessments/PHQ9Assessment'
 import GAD7Assessment from './assessments/GAD7Assessment'
 import PSS10Assessment from './assessments/PSS10Assessment'
+import CustomMLAssessment from './assessments/CustomMLAssessment'
 import UserContextForm from './UserContextForm'
 import ResultsDisplay from './ResultsDisplay'
 import type { AssessmentData, MLResponse, UserContext } from '../types/assessment'
 
-type AssessmentType = 'PHQ9' | 'GAD7' | 'PSS10' | null
+type AssessmentType = 'PHQ9' | 'GAD7' | 'PSS10' | 'CustomML' | null
 
 const MentalHealthAssessment = () => {
   const [currentAssessment, setCurrentAssessment] = useState<AssessmentType>(null)
@@ -15,18 +16,26 @@ const MentalHealthAssessment = () => {
   const [mlResponse, setMLResponse] = useState<MLResponse | null>(null)
   const [showResults, setShowResults] = useState(false)
 
-  const handleAssessmentComplete = (data: AssessmentData) => {
-    setAssessmentResults(data)
-    // Mock ML response for now - this will be replaced with actual ML API call
-    const mockMLResponse: MLResponse = {
-      risk_level: data.responses.reduce((sum, val) => sum + val, 0) > 10 ? 'moderate' : 'low',
-      confidence: 0.85,
-      recommendations: ['sleep_hygiene', 'stress_management', 'professional_consultation'],
-      crisis_flag: data.responses.some(val => val >= 3),
-      next_assessment_days: 7
+  const handleAssessmentComplete = (data: AssessmentData | any) => {
+    // Check if this is a backend response (has ml_response property)
+    if (data.ml_response) {
+      // This is a backend response with ML analysis
+      setAssessmentResults(data)
+      setMLResponse(data.ml_response)
+      setShowResults(true)
+    } else {
+      // This is a regular assessment data, generate mock ML response
+      setAssessmentResults(data)
+      const mockMLResponse: MLResponse = {
+        risk_level: data.responses.reduce((sum: number, val: number) => sum + val, 0) > 10 ? 'moderate' : 'low',
+        confidence: 0.85,
+        recommendations: ['sleep_hygiene', 'stress_management', 'professional_consultation'],
+        crisis_flag: data.responses.some((val: number) => val >= 3),
+        next_assessment_days: 7
+      }
+      setMLResponse(mockMLResponse)
+      setShowResults(true)
     }
-    setMLResponse(mockMLResponse)
-    setShowResults(true)
   }
 
   const handleStartOver = () => {
@@ -78,6 +87,8 @@ const MentalHealthAssessment = () => {
         return <GAD7Assessment userContext={userContext} onComplete={handleAssessmentComplete} />
       case 'PSS10':
         return <PSS10Assessment userContext={userContext} onComplete={handleAssessmentComplete} />
+      case 'CustomML':
+        return <CustomMLAssessment userContext={userContext} onComplete={handleAssessmentComplete} />
       default:
         return null
     }
@@ -100,6 +111,14 @@ const MentalHealthAssessment = () => {
           <p>Patient Health Questionnaire</p>
           <span className="assessment-description">
             9-item depression screening tool widely used in clinical settings
+          </span>
+        </div>
+        
+        <div className="assessment-card" onClick={() => setCurrentAssessment('CustomML')}>
+          <h3>Custom ML</h3>
+          <p>Machine Learning Assessment</p>
+          <span className="assessment-description">
+            Custom assessment using advanced ML algorithms for personalized insights
           </span>
         </div>
         

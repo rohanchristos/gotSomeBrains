@@ -6,7 +6,7 @@ export interface UserContext {
 }
 
 export interface AssessmentData {
-  assessment_type: 'PHQ9' | 'GAD7' | 'PSS10'
+  assessment_type: 'PHQ9' | 'GAD7' | 'PSS10' | 'CustomML'
   responses: number[]
   user_context: UserContext
   timestamp?: string
