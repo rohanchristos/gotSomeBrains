@@ -1507,3 +1507,132 @@ body {
     max-width: 300px;
   }
 }
+
+/* TensorFlow.js Specific Styles */
+.model-status {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #2d2d2d;
+  border: 1px solid #444;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-indicator.ready {
+  color: #22c55e;
+}
+
+.status-indicator.initializing {
+  color: #eab308;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.connecting {
+  color: #3b82f6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.error-message {
+  background: #dc2626;
+  color: white;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.tensorflow-analysis {
+  background: #1e3a8a;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border: 1px solid #4f46e5;
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+}
+
+.tensorflow-analysis h3 {
+  color: #e0e7ff;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.neural-network-results {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.nn-score {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #60a5fa;
+}
+
+.raw-score {
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #a78bfa;
+}
+
+.user-id-info {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border-left: 3px solid #4f46e5;
+}
+
+.user-id-info label {
+  display: block;
+  font-size: 0.8rem;
+  color: #c7d2fe;
+  margin-bottom: 0.25rem;
+}
+
+.user-id-info code {
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #fbbf24;
+  font-size: 0.85rem;
+}
+
+.ml-source-info {
+  margin-top: 1rem;
+  text-align: center;
+  color: #a78bfa;
+  font-style: italic;
+}
+
+/* Enhanced button styles for TensorFlow.js */
+.nav-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nav-button.primary:disabled {
+  background: #6b7280;
+  border-color: #6b7280;
+}
+
+.nav-button.primary:disabled:hover {
+  background: #6b7280;
+  transform: none;
+}

@@ -25,6 +25,40 @@ export interface MLResponse {
   }
 }
 
+// New interface for TensorFlow.js backend response
+export interface TensorFlowMLResponse {
+  score: number
+  risk_level: 'low' | 'moderate' | 'high' | 'severe'
+  confidence: number
+  recommendations: string[]
+  neuralNetworkScore?: number
+}
+
+// Enhanced backend response format
+export interface BackendAssessmentResponse {
+  userId: string
+  assessment_type: string
+  responses: number[]
+  user_context: UserContext
+  ml_results: TensorFlowMLResponse
+  timestamp: string
+  message: string
+}
+
+// Model status interface
+export interface ModelStatus {
+  status: 'ready' | 'initializing' | 'error'
+  model_info?: {
+    layers: number
+    parameters: number
+    inputShape: number[]
+    outputShape: number[]
+    architecture: string
+    framework: string
+  }
+  timestamp: string
+}
+
 export interface AssessmentQuestion {
   id: number
   text: string
