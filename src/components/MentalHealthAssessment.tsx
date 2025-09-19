@@ -5,6 +5,8 @@ import PSS10Assessment from './assessments/PSS10Assessment'
 import CustomMLAssessment from './assessments/CustomMLAssessment'
 import UserContextForm from './UserContextForm'
 import ResultsDisplay from './ResultsDisplay'
+import AdminLogin from './AdminLogin'
+import AdminDashboard from './AdminDashboard'
 import type { AssessmentData, MLResponse, UserContext } from '../types/assessment'
 
 type AssessmentType = 'PHQ9' | 'GAD7' | 'PSS10' | 'CustomML' | null
@@ -15,6 +17,8 @@ const MentalHealthAssessment = () => {
   const [assessmentResults, setAssessmentResults] = useState<AssessmentData | null>(null)
   const [mlResponse, setMLResponse] = useState<MLResponse | null>(null)
   const [showResults, setShowResults] = useState(false)
+  const [showAdminLogin, setShowAdminLogin] = useState(false)
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false)
 
   const handleAssessmentComplete = (data: AssessmentData | any) => {
     // Check if this is a backend response (has ml_response property)
@@ -44,6 +48,25 @@ const MentalHealthAssessment = () => {
     setAssessmentResults(null)
     setMLResponse(null)
     setShowResults(false)
+    setShowAdminLogin(false)
+    setShowAdminDashboard(false)
+  }
+
+  const handleAdminLogin = () => {
+    setShowAdminLogin(true)
+  }
+
+  const handleAdminLoginSuccess = () => {
+    setShowAdminLogin(false)
+    setShowAdminDashboard(true)
+  }
+
+  const handleCloseAdminLogin = () => {
+    setShowAdminLogin(false)
+  }
+
+  const handleCloseAdminDashboard = () => {
+    setShowAdminDashboard(false)
   }
 
   const exportData = () => {
@@ -137,6 +160,15 @@ const MentalHealthAssessment = () => {
             10-item scale measuring perceived stress levels over the past month
           </span>
         </div>
+        
+        {/* Admin Portal Card */}
+        <div className="assessment-card admin-card" onClick={handleAdminLogin}>
+          <h3>🔐 Admin Portal</h3>
+          <p>Database Management</p>
+          <span className="assessment-description">
+            View all patient assessments, ML scores, and analytics dashboard
+          </span>
+        </div>
       </div>
       
       <div className="info-section">
@@ -150,6 +182,21 @@ const MentalHealthAssessment = () => {
           <strong>Privacy Notice:</strong> Your responses are confidential and used only for assessment purposes.
         </div>
       </div>
+      
+      {/* Admin Login Modal */}
+      {showAdminLogin && (
+        <AdminLogin 
+          onLoginSuccess={handleAdminLoginSuccess}
+          onClose={handleCloseAdminLogin}
+        />
+      )}
+      
+      {/* Admin Dashboard Modal */}
+      {showAdminDashboard && (
+        <AdminDashboard 
+          onClose={handleCloseAdminDashboard}
+        />
+      )}
     </div>
   )
 }

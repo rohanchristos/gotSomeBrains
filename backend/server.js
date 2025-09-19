@@ -129,6 +129,73 @@ app.get('/assessment/:userId', async (req, res) => {
   }
 });
 
+// Admin endpoint to get all assessments
+app.get('/admin/assessments', async (req, res) => {
+  try {
+    const assessments = await UserAssessment.find({})
+      .sort({ timestamp: -1 }) // Sort by newest first
+      .limit(100); // Limit to last 100 assessments for performance
+    
+    const formattedAssessments = assessments.map(assessment => ({
+      userId: assessment.userId,
+      assessmentType: assessment.assessmentType,
+      mlScore: assessment.mlScore,
+      riskLevel: assessment.riskLevel,
+      timestamp: assessment.timestamp,
+      userContext: assessment.userContext,
+      responses: assessment.responses,
+      recommendations: assessment.recommendations
+    }));
+    
+    res.json({
+      total: formattedAssessments.length,
+      assessments: formattedAssessments
+    });
+    
+  } catch (error) {
+    console.error('Error retrieving all assessments:', error);
+    res.status(500).json({
+      error: 'Internal server error retrieving assessments'
+    });
+  }
+});
+
+// Admin stats endpoint
+app.get('/admin/stats', async (req, res) => {
+  try {
+    const totalAssessments = await UserAssessment.countDocuments();
+    const riskLevelStats = await UserAssessment.aggregate([
+      {
+        $group: {
+          _id: '$riskLevel',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    const assessmentTypeStats = await UserAssessment.aggregate([
+      {
+        $group: {
+          _id: '$assessmentType',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    res.json({
+      totalAssessments,
+      riskLevelDistribution: riskLevelStats,
+      assessmentTypeDistribution: assessmentTypeStats
+    });
+    
+  } catch (error) {
+    console.error('Error retrieving admin stats:', error);
+    res.status(500).json({
+      error: 'Internal server error retrieving stats'
+    });
+  }
+});
+
 // ML Model status endpoint
 app.get('/model/status', (req, res) => {
   res.json({
