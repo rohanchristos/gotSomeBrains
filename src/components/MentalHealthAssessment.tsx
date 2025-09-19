@@ -8,6 +8,7 @@ import ResultsDisplay from './ResultsDisplay'
 import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
 import SimpleChat from './chat/SimpleChat'
+import Resources from './Resources'
 import type { AssessmentData, MLResponse, UserContext } from '../types/assessment'
 
 type AssessmentType = 'PHQ9' | 'GAD7' | 'PSS10' | 'CustomML' | 'ChatDoctor' | null
@@ -22,6 +23,7 @@ const MentalHealthAssessment = () => {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showDoctorDashboard, setShowDoctorDashboard] = useState(false)
+  const [showResources, setShowResources] = useState(false)
 
   const handleAssessmentComplete = (data: AssessmentData | any) => {
     // Check if this is a backend response (has ml_response property)
@@ -55,6 +57,7 @@ const MentalHealthAssessment = () => {
     setShowAdminDashboard(false)
     setShowChat(false)
     setShowDoctorDashboard(false)
+    setShowResources(false)
   }
 
   const handleAdminLogin = () => {
@@ -89,6 +92,14 @@ const MentalHealthAssessment = () => {
 
   const handleCloseDoctorDashboard = () => {
     setShowDoctorDashboard(false)
+  }
+
+  const handleShowResources = () => {
+    setShowResources(true)
+  }
+
+  const handleCloseResources = () => {
+    setShowResources(false)
   }
 
   const exportData = () => {
@@ -193,6 +204,15 @@ const MentalHealthAssessment = () => {
         </div>
 
 
+        {/* Resources Card */}
+        <div className="assessment-card resources-card" onClick={handleShowResources}>
+          <h3>📚 Self-Help Resources</h3>
+          <p>Mental Health Support Materials</p>
+          <span className="assessment-description">
+            Access curated videos, books, articles, and crisis support resources
+          </span>
+        </div>
+
         {/* Admin Portal Card */}
         <div className="assessment-card admin-card" onClick={handleAdminLogin}>
           <h3>🔐 Admin Portal</h3>
@@ -234,6 +254,13 @@ const MentalHealthAssessment = () => {
       {showChat && (
         <SimpleChat 
           onClose={handleCloseChat}
+        />
+      )}
+
+      {/* Resources Modal */}
+      {showResources && (
+        <Resources 
+          onClose={handleCloseResources}
         />
       )}
     </div>
