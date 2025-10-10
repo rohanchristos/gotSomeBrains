@@ -22,7 +22,6 @@ const MentalHealthAssessment = () => {
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [showAdminDashboard, setShowAdminDashboard] = useState(false)
   const [showChat, setShowChat] = useState(false)
-  const [showDoctorDashboard, setShowDoctorDashboard] = useState(false)
   const [showResources, setShowResources] = useState(false)
 
   const handleAssessmentComplete = (data: AssessmentData | any) => {
@@ -56,7 +55,6 @@ const MentalHealthAssessment = () => {
     setShowAdminLogin(false)
     setShowAdminDashboard(false)
     setShowChat(false)
-    setShowDoctorDashboard(false)
     setShowResources(false)
   }
 
@@ -84,14 +82,6 @@ const MentalHealthAssessment = () => {
 
   const handleCloseChat = () => {
     setShowChat(false)
-  }
-
-  const handleDoctorPortal = () => {
-    setShowDoctorDashboard(true)
-  }
-
-  const handleCloseDoctorDashboard = () => {
-    setShowDoctorDashboard(false)
   }
 
   const handleShowResources = () => {
