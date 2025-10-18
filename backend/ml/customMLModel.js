@@ -14,7 +14,8 @@ class CustomMLModel {
       // Create a neural network model
       this.model = tf.sequential({
         layers: [
-          // Input layer: responses (3) + encoded user context (4) = 7 features
+          // Input layer: aggregated responses (3) + encoded user context (4) = 7 features
+          // Aggregated responses: [mean, max, variance] from variable-length response arrays
           tf.layers.dense({
             inputShape: [7],
             units: 16,
@@ -166,8 +167,12 @@ class CustomMLModel {
       // Encode user context
       const encodedContext = this.encodeUserContext(userContext);
       
-      // Create input tensor
-      const inputData = [...responses, ...encodedContext];
+      // Aggregate responses into 3 features to match model input shape [7]
+      // This handles variable-length response arrays (e.g., PSS10 has 10 responses)
+      const aggregatedResponses = this.aggregateResponses(responses);
+      
+      // Create input tensor: 3 aggregated features + 4 context features = 7 total
+      const inputData = [...aggregatedResponses, ...encodedContext];
       const inputTensor = tf.tensor2d([inputData]);
       
       // Get prediction from neural network
@@ -193,6 +198,25 @@ class CustomMLModel {
       console.error('Error in TensorFlow.js prediction:', error);
       throw new Error('ML prediction failed: ' + error.message);
     }
+  }
+
+  aggregateResponses(responses) {
+    // Aggregate variable-length response arrays into 3 features
+    // Feature 1: Mean response (overall stress level)
+    const mean = responses.reduce((sum, r) => sum + r, 0) / responses.length;
+    
+    // Feature 2: Maximum response (peak stress indicator)
+    const max = Math.max(...responses);
+    
+    // Feature 3: Variance (response consistency)
+    const variance = this.calculateVariance(responses);
+    
+    // Normalize to 0-4 scale (matching training data)
+    return [
+      Math.min(4, mean),
+      Math.min(4, max),
+      Math.min(4, variance)
+    ];
   }
 
   encodeUserContext(userContext) {

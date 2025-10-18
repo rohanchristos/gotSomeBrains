@@ -38,6 +38,51 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mental_he
 app.use(cors());
 app.use(express.json());
 
+// Store assessment scores without ML processing
+app.post('/api/assessments', async (req, res) => {
+  try {
+    console.log('Received assessment data:', req.body);
+    
+    const { assessmentType, responses, userId, metadata = {} } = req.body;
+    
+    // Validate required fields
+    if (!assessmentType || !Array.isArray(responses) || !userId) {
+      return res.status(400).json({ error: 'Missing required fields: assessmentType, responses, userId' });
+    }
+    
+    // Create new assessment record
+    const assessment = new UserAssessment({
+      userId,
+      assessmentType,
+      responses,
+      metadata,
+      // Set default values for required fields that won't be used
+      userContext: {
+        age_group: 'unknown',
+        institution_type: 'unknown',
+        gender: 'unknown',
+        previous_mental_health_treatment: false
+      },
+      mlScore: 0, // Not used for these assessments
+      riskLevel: 'low' // Default value
+    });
+    
+    await assessment.save();
+    
+    res.status(201).json({
+      message: 'Assessment data saved successfully',
+      assessmentId: assessment._id
+    });
+    
+  } catch (error) {
+    console.error('Error saving assessment:', error);
+    res.status(500).json({ 
+      error: 'Failed to save assessment data',
+      details: error.message 
+    });
+  }
+});
+
 // Custom ML endpoint
 app.post('/customML', async (req, res) => {
   try {
