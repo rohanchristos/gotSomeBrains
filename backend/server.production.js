@@ -4,48 +4,142 @@ const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 const http = require('http');
 const socketIo = require('socket.io');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 require('dotenv').config();
 
 const UserAssessment = require('./models/UserAssessment');
 const ChatMessage = require('./models/ChatMessage');
 const ChatRoom = require('./models/ChatRoom');
 const CustomMLModel = require('./ml/customMLModel');
+const {
+  validateAssessment,
+  validateChatRoom,
+  validateChatAccept,
+  validateUserId,
+  validateRoomId
+} = require('./middleware/validation');
 
 console.log('Using TensorFlow.js Neural Network ML Model');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "http://localhost:5173", // Vite default port
-    methods: ["GET", "POST"]
-  }
-});
+
+// Environment variables with validation
 const PORT = process.env.PORT || 3001;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mental_health_app';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
 // Initialize ML Model
 const mlModel = new CustomMLModel();
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mental_health_app', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+// MongoDB Connection with retry logic
+const connectDB = async (retries = 5) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
+      });
+      console.log('✅ Connected to MongoDB');
+      return;
+    } catch (err) {
+      console.error(`❌ MongoDB connection attempt ${i + 1} failed:`, err.message);
+      if (i < retries - 1) {
+        console.log(`Retrying in 5 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      } else {
+        console.error('Failed to connect to MongoDB after multiple attempts');
+        if (NODE_ENV === 'production') {
+          process.exit(1);
+        }
+      }
+    }
+  }
+};
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+connectDB();
 
-// Custom ML endpoint
-app.post('/customML', async (req, res) => {
+// Handle MongoDB connection errors after initial connection
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected. Attempting to reconnect...');
+  connectDB();
+});
+
+// Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: NODE_ENV === 'production',
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS Configuration
+const corsOptions = {
+  origin: CORS_ORIGIN.split(',').map(origin => origin.trim()),
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// Socket.IO with CORS
+const io = socketIo(server, {
+  cors: corsOptions
+});
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to all routes
+app.use('/customML', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50, // More restrictive for ML endpoint
+  message: 'Too many assessment submissions, please try again later.'
+}));
+
+app.use('/admin', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30, // More restrictive for admin endpoints
+  message: 'Too many admin requests, please try again later.'
+}));
+
+// Body parser with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Sanitize data to prevent NoSQL injection
+app.use(mongoSanitize());
+
+// Request logging middleware (production-ready)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (NODE_ENV === 'development' || res.statusCode >= 400) {
+      console.log(`${req.method} ${req.path} ${res.statusCode} - ${duration}ms`);
+    }
+  });
+  next();
+});
+
+// Custom ML endpoint with validation
+app.post('/customML', validateAssessment, async (req, res) => {
   try {
-    console.log('Received CustomML assessment data:', req.body);
-    
     const { assessment_type, responses, user_context, timestamp } = req.body;
     
-    // Generate unique user ID if not provided
+    // Generate unique user ID
     const userId = uuidv4();
     
     // Check if ML model is ready
@@ -58,8 +152,6 @@ app.post('/customML', async (req, res) => {
 
     // Process data through TensorFlow.js neural network
     const mlResults = await mlModel.predict(responses, user_context);
-    
-    console.log('ML Model Results:', mlResults);
     
     // Create assessment record
     const assessmentData = {
@@ -77,7 +169,7 @@ app.post('/customML', async (req, res) => {
     const userAssessment = new UserAssessment(assessmentData);
     await userAssessment.save();
     
-    console.log('Assessment saved to database with ID:', userId);
+    console.log(`✅ Assessment saved: ${userId} (${assessment_type})`);
     
     // Prepare response for frontend
     const response = {
@@ -95,21 +187,19 @@ app.post('/customML', async (req, res) => {
       message: 'Assessment processed successfully'
     };
     
-    console.log('Sending response:', response);
     res.json(response);
     
   } catch (error) {
-    console.error('Error processing CustomML request:', error);
+    console.error('❌ Error processing assessment:', error.message);
     res.status(500).json({
       error: 'Internal server error processing assessment',
-      details: error.message
+      details: NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-
 // Get user assessment results
-app.get('/assessment/:userId', async (req, res) => {
+app.get('/assessment/:userId', validateUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const assessment = await UserAssessment.findOne({ userId: userId });
@@ -133,7 +223,7 @@ app.get('/assessment/:userId', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error retrieving assessment:', error);
+    console.error('❌ Error retrieving assessment:', error.message);
     res.status(500).json({
       error: 'Internal server error retrieving assessment'
     });
@@ -141,11 +231,17 @@ app.get('/assessment/:userId', async (req, res) => {
 });
 
 // Admin endpoint to get all assessments
-app.get('/admin/assessments', async (req, res) => {
+app.get('/admin/assessments', limiter, async (req, res) => {
   try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const skip = parseInt(req.query.skip) || 0;
+    
     const assessments = await UserAssessment.find({})
-      .sort({ timestamp: -1 }) // Sort by newest first
-      .limit(100); // Limit to last 100 assessments for performance
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .skip(skip);
+    
+    const total = await UserAssessment.countDocuments();
     
     const formattedAssessments = assessments.map(assessment => ({
       userId: assessment.userId,
@@ -159,12 +255,13 @@ app.get('/admin/assessments', async (req, res) => {
     }));
     
     res.json({
-      total: formattedAssessments.length,
+      total: total,
+      count: formattedAssessments.length,
       assessments: formattedAssessments
     });
     
   } catch (error) {
-    console.error('Error retrieving all assessments:', error);
+    console.error('❌ Error retrieving assessments:', error.message);
     res.status(500).json({
       error: 'Internal server error retrieving assessments'
     });
@@ -172,7 +269,7 @@ app.get('/admin/assessments', async (req, res) => {
 });
 
 // Admin stats endpoint
-app.get('/admin/stats', async (req, res) => {
+app.get('/admin/stats', limiter, async (req, res) => {
   try {
     const totalAssessments = await UserAssessment.countDocuments();
     const riskLevelStats = await UserAssessment.aggregate([
@@ -200,7 +297,7 @@ app.get('/admin/stats', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error retrieving admin stats:', error);
+    console.error('❌ Error retrieving stats:', error.message);
     res.status(500).json({
       error: 'Internal server error retrieving stats'
     });
@@ -216,23 +313,41 @@ app.get('/model/status', (req, res) => {
   });
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+// Enhanced health check endpoint
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: NODE_ENV,
     ml_model_ready: mlModel.isReady(),
-    timestamp: new Date().toISOString() 
-  });
+    database: 'disconnected',
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+    }
+  };
+  
+  // Check database connection
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping();
+      health.database = 'connected';
+    }
+  } catch (error) {
+    health.database = 'error';
+    health.status = 'DEGRADED';
+  }
+  
+  const statusCode = health.status === 'OK' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 // Chat API endpoints
-
-// Create a new chat room (patient requests chat)
-app.post('/chat/room', async (req, res) => {
+app.post('/chat/room', validateChatRoom, async (req, res) => {
   try {
     const { patientId, patientName, assessmentData, priority = 'medium' } = req.body;
     
-    // Check if patient already has an active room
     const existingRoom = await ChatRoom.findOne({ 
       patientId: patientId, 
       status: { $in: ['waiting', 'active'] } 
@@ -257,7 +372,6 @@ app.post('/chat/room', async (req, res) => {
     
     await chatRoom.save();
     
-    // Notify available doctors about new chat request
     io.emit('new_chat_request', {
       roomId,
       patientName,
@@ -272,13 +386,12 @@ app.post('/chat/room', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error creating chat room:', error);
+    console.error('❌ Error creating chat room:', error.message);
     res.status(500).json({ error: 'Failed to create chat room' });
   }
 });
 
-// Get chat room details
-app.get('/chat/room/:roomId', async (req, res) => {
+app.get('/chat/room/:roomId', validateRoomId, async (req, res) => {
   try {
     const { roomId } = req.params;
     const room = await ChatRoom.findOne({ roomId });
@@ -289,27 +402,27 @@ app.get('/chat/room/:roomId', async (req, res) => {
     
     res.json(room);
   } catch (error) {
-    console.error('Error fetching chat room:', error);
+    console.error('❌ Error fetching chat room:', error.message);
     res.status(500).json({ error: 'Failed to fetch chat room' });
   }
 });
 
-// Get chat messages for a room
-app.get('/chat/messages/:roomId', async (req, res) => {
+app.get('/chat/messages/:roomId', validateRoomId, async (req, res) => {
   try {
     const { roomId } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    
     const messages = await ChatMessage.find({ roomId })
       .sort({ timestamp: 1 })
-      .limit(100);
+      .limit(limit);
     
     res.json(messages);
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error('❌ Error fetching messages:', error.message);
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
 });
 
-// Get waiting chat rooms for doctors
 app.get('/chat/waiting-rooms', async (req, res) => {
   try {
     const waitingRooms = await ChatRoom.find({ status: 'waiting' })
@@ -317,13 +430,12 @@ app.get('/chat/waiting-rooms', async (req, res) => {
     
     res.json(waitingRooms);
   } catch (error) {
-    console.error('Error fetching waiting rooms:', error);
+    console.error('❌ Error fetching waiting rooms:', error.message);
     res.status(500).json({ error: 'Failed to fetch waiting rooms' });
   }
 });
 
-// Doctor accepts a chat room
-app.post('/chat/accept/:roomId', async (req, res) => {
+app.post('/chat/accept/:roomId', validateChatAccept, async (req, res) => {
   try {
     const { roomId } = req.params;
     const { doctorId, doctorName } = req.body;
@@ -343,7 +455,6 @@ app.post('/chat/accept/:roomId', async (req, res) => {
       return res.status(404).json({ error: 'Chat room not found or already taken' });
     }
     
-    // Notify the patient that doctor joined
     io.to(roomId).emit('doctor_joined', {
       doctorName,
       message: `Dr. ${doctorName} has joined the chat`
@@ -351,21 +462,19 @@ app.post('/chat/accept/:roomId', async (req, res) => {
     
     res.json({ message: 'Chat room accepted successfully', room });
   } catch (error) {
-    console.error('Error accepting chat room:', error);
+    console.error('❌ Error accepting chat room:', error.message);
     res.status(500).json({ error: 'Failed to accept chat room' });
   }
 });
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log('👤 User connected:', socket.id);
   
-  // Join a chat room
   socket.on('join_room', async (data) => {
     const { roomId, userId, userType, userName } = data;
     
     try {
-      // Verify room exists
       const room = await ChatRoom.findOne({ roomId });
       if (!room) {
         socket.emit('error', { message: 'Chat room not found' });
@@ -378,9 +487,6 @@ io.on('connection', (socket) => {
       socket.userType = userType;
       socket.userName = userName;
       
-      console.log(`${userName} (${userType}) joined room ${roomId}`);
-      
-      // Notify others in the room
       socket.to(roomId).emit('user_joined', {
         userId,
         userName,
@@ -388,7 +494,6 @@ io.on('connection', (socket) => {
         message: `${userName} joined the chat`
       });
       
-      // Send recent messages to the newly joined user
       const recentMessages = await ChatMessage.find({ roomId })
         .sort({ timestamp: -1 })
         .limit(50)
@@ -397,12 +502,11 @@ io.on('connection', (socket) => {
       socket.emit('message_history', recentMessages);
       
     } catch (error) {
-      console.error('Error joining room:', error);
+      console.error('❌ Error joining room:', error.message);
       socket.emit('error', { message: 'Failed to join room' });
     }
   });
   
-  // Handle sending messages
   socket.on('send_message', async (data) => {
     const { roomId, message } = data;
     const { userId, userType, userName } = socket;
@@ -412,44 +516,41 @@ io.on('connection', (socket) => {
       return;
     }
     
+    // Sanitize message
+    const sanitizedMessage = message.trim().substring(0, 1000);
+    
     try {
-      // Save message to database
       const chatMessage = new ChatMessage({
         roomId,
         senderId: userId,
         senderName: userName,
         senderType: userType,
-        message: message.trim()
+        message: sanitizedMessage
       });
       
       await chatMessage.save();
       
-      // Update room last activity
       await ChatRoom.findOneAndUpdate(
         { roomId },
         { lastActivity: new Date() }
       );
       
-      // Broadcast message to all users in the room
       io.to(roomId).emit('new_message', {
         _id: chatMessage._id,
         roomId,
         senderId: userId,
         senderName: userName,
         senderType: userType,
-        message: message.trim(),
+        message: sanitizedMessage,
         timestamp: chatMessage.timestamp
       });
       
-      console.log(`Message sent in room ${roomId} by ${userName}: ${message}`);
-      
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error.message);
       socket.emit('error', { message: 'Failed to send message' });
     }
   });
   
-  // Handle typing indicators
   socket.on('typing', (data) => {
     const { roomId, isTyping } = data;
     const { userName, userType } = socket;
@@ -461,9 +562,8 @@ io.on('connection', (socket) => {
     });
   });
   
-  // Handle disconnection
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log('👤 User disconnected:', socket.id);
     
     if (socket.roomId && socket.userName) {
       socket.to(socket.roomId).emit('user_left', {
@@ -474,7 +574,6 @@ io.on('connection', (socket) => {
     }
   });
   
-  // Handle ending chat session
   socket.on('end_chat', async (data) => {
     const { roomId } = data;
     
@@ -487,23 +586,47 @@ io.on('connection', (socket) => {
         }
       );
       
-      // Notify all users in the room
       io.to(roomId).emit('chat_ended', {
         message: 'Chat session has been ended'
       });
       
-      console.log(`Chat session ended for room ${roomId}`);
-      
     } catch (error) {
-      console.error('Error ending chat:', error);
+      console.error('❌ Error ending chat:', error.message);
     }
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    details: NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
   });
 });
 
 // Start server
 server.listen(PORT, () => {
-  console.log(`CustomML Backend Server with Socket.IO running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`CustomML endpoint: http://localhost:${PORT}/customML`);
-  console.log(`Socket.IO chat enabled`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Environment: ${NODE_ENV}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`🧠 ML endpoint: http://localhost:${PORT}/customML`);
+  console.log(`💬 Socket.IO chat enabled`);
 });

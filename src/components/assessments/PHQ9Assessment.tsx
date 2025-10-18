@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { AssessmentData, UserContext, AssessmentQuestion } from '../../types/assessment'
+import type { AssessmentData, UserContext, AssessmentQuestion, BackendAssessmentResponse } from '../../types/assessment'
+import { BackendService } from '../../services/backendService'
 
 interface PHQ9AssessmentProps {
   userContext: UserContext
@@ -102,6 +103,8 @@ const PHQ9_QUESTIONS: AssessmentQuestion[] = [
 const PHQ9Assessment = ({ userContext, onComplete }: PHQ9AssessmentProps) => {
   const [responses, setResponses] = useState<number[]>(new Array(9).fill(-1))
   const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [backendError, setBackendError] = useState<string | null>(null)
 
   const handleResponse = (value: number) => {
     const newResponses = [...responses]
@@ -115,14 +118,47 @@ const PHQ9Assessment = ({ userContext, onComplete }: PHQ9AssessmentProps) => {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setBackendError(null)
+
     const assessmentData: AssessmentData = {
       assessment_type: 'PHQ9',
       responses: responses,
       user_context: userContext,
       timestamp: new Date().toISOString()
     }
-    onComplete(assessmentData)
+    
+    try {
+      // Send data to backend for ML processing and database storage
+      const backendResponse: BackendAssessmentResponse = await BackendService.submitAssessment(assessmentData)
+      console.log('Backend response for PHQ9:', backendResponse)
+      
+      // Create enhanced assessment data with ML results
+      const enhancedData = {
+        ...assessmentData,
+        userId: backendResponse.userId,
+        ml_results: backendResponse.ml_results,
+        message: backendResponse.message,
+        backend_processed: true
+      }
+      
+      onComplete(enhancedData)
+      
+    } catch (error) {
+      console.error('Error sending PHQ9 data to backend:', error)
+      setBackendError(error instanceof Error ? error.message : 'Failed to process assessment')
+      
+      // Fallback to local processing if backend is unavailable
+      const fallbackData = {
+        ...assessmentData,
+        backend_processed: false,
+        error: 'Backend unavailable - showing basic results'
+      }
+      onComplete(fallbackData)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const isComplete = responses.every(response => response !== -1)
@@ -133,6 +169,13 @@ const PHQ9Assessment = ({ userContext, onComplete }: PHQ9AssessmentProps) => {
       <div className="assessment-header">
         <h2>PHQ-9 Depression Assessment</h2>
         <p>Over the last 2 weeks, how often have you been bothered by any of the following problems?</p>
+        
+        {backendError && (
+          <div className="error-message">
+            ⚠️ {backendError}
+          </div>
+        )}
+        
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }}></div>
         </div>
@@ -168,8 +211,12 @@ const PHQ9Assessment = ({ userContext, onComplete }: PHQ9AssessmentProps) => {
         </button>
 
         {currentQuestion === PHQ9_QUESTIONS.length - 1 && isComplete ? (
-          <button className="nav-button primary" onClick={handleSubmit}>
-            Complete Assessment
+          <button 
+            className="nav-button primary" 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? '🧠 Processing...' : 'Complete Assessment'}
           </button>
         ) : (
           <button

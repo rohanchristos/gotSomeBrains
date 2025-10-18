@@ -1,6 +1,6 @@
-// Use browser-compatible TensorFlow.js for better Node.js compatibility
-require('@tensorflow/tfjs-backend-cpu');
+// Use TensorFlow.js with CPU backend (compatible with all Node versions)
 const tf = require('@tensorflow/tfjs');
+require('@tensorflow/tfjs-backend-cpu');
 
 class CustomMLModel {
   constructor() {

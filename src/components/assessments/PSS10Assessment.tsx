@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { AssessmentData, UserContext, AssessmentQuestion } from '../../types/assessment'
+import type { AssessmentData, UserContext, AssessmentQuestion, BackendAssessmentResponse } from '../../types/assessment'
+import { BackendService } from '../../services/backendService'
 
 interface PSS10AssessmentProps {
   userContext: UserContext
@@ -122,6 +123,8 @@ const PSS10_QUESTIONS: AssessmentQuestion[] = [
 const PSS10Assessment = ({ userContext, onComplete }: PSS10AssessmentProps) => {
   const [responses, setResponses] = useState<number[]>(new Array(10).fill(-1))
   const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [backendError, setBackendError] = useState<string | null>(null)
 
   const handleResponse = (value: number) => {
     const newResponses = [...responses]
@@ -135,14 +138,47 @@ const PSS10Assessment = ({ userContext, onComplete }: PSS10AssessmentProps) => {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setBackendError(null)
+
     const assessmentData: AssessmentData = {
       assessment_type: 'PSS10',
       responses: responses,
       user_context: userContext,
       timestamp: new Date().toISOString()
     }
-    onComplete(assessmentData)
+    
+    try {
+      // Send data to backend for ML processing and database storage
+      const backendResponse: BackendAssessmentResponse = await BackendService.submitAssessment(assessmentData)
+      console.log('Backend response for PSS10:', backendResponse)
+      
+      // Create enhanced assessment data with ML results
+      const enhancedData = {
+        ...assessmentData,
+        userId: backendResponse.userId,
+        ml_results: backendResponse.ml_results,
+        message: backendResponse.message,
+        backend_processed: true
+      }
+      
+      onComplete(enhancedData)
+      
+    } catch (error) {
+      console.error('Error sending PSS10 data to backend:', error)
+      setBackendError(error instanceof Error ? error.message : 'Failed to process assessment')
+      
+      // Fallback to local processing if backend is unavailable
+      const fallbackData = {
+        ...assessmentData,
+        backend_processed: false,
+        error: 'Backend unavailable - showing basic results'
+      }
+      onComplete(fallbackData)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const isComplete = responses.every(response => response !== -1)
@@ -153,6 +189,13 @@ const PSS10Assessment = ({ userContext, onComplete }: PSS10AssessmentProps) => {
       <div className="assessment-header">
         <h2>PSS-10 Perceived Stress Scale</h2>
         <p>The questions in this scale ask you about your feelings and thoughts during the last month.</p>
+        
+        {backendError && (
+          <div className="error-message">
+            ⚠️ {backendError}
+          </div>
+        )}
+        
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }}></div>
         </div>
@@ -188,8 +231,12 @@ const PSS10Assessment = ({ userContext, onComplete }: PSS10AssessmentProps) => {
         </button>
 
         {currentQuestion === PSS10_QUESTIONS.length - 1 && isComplete ? (
-          <button className="nav-button primary" onClick={handleSubmit}>
-            Complete Assessment
+          <button 
+            className="nav-button primary" 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? '🧠 Processing...' : 'Complete Assessment'}
           </button>
         ) : (
           <button

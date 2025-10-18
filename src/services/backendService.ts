@@ -1,6 +1,7 @@
 import type { AssessmentData, BackendAssessmentResponse, ModelStatus } from '../types/assessment'
 
-const BACKEND_BASE_URL = 'http://localhost:3001'
+// Use environment variable for API URL, fallback to localhost for development
+const BACKEND_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export class BackendService {
   // Check if backend is available

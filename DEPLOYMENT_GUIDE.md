@@ -1,332 +1,424 @@
-# MongoDB Atlas + Vercel Deployment Guide
+# Deployment Guide - Mental Health Assessment Platform
 
-This guide will help you deploy your mental health app with MongoDB Atlas and Vercel.
+## 🚀 Quick Start Production Deployment
 
-## Prerequisites
-
-- Node.js installed
-- Git repository set up
-- MongoDB Atlas account
-- Vercel account
-
----
-
-## Part 1: MongoDB Atlas Setup
-
-### 1. Create MongoDB Atlas Account
-1. Go to [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
-2. Sign up or log in
-3. Create a new project (e.g., "Mental Health App")
-
-### 2. Create a Cluster
-1. Click **"Build a Database"**
-2. Choose **FREE M0 Cluster** (512MB storage)
-3. Select cloud provider and region (choose closest to your users)
-4. Name your cluster (e.g., "Cluster0")
-5. Click **"Create Cluster"** (takes 3-5 minutes)
-
-### 3. Configure Database Access
-1. Go to **Database Access** (left sidebar)
-2. Click **"Add New Database User"**
-3. Choose **Password** authentication method
-4. Create credentials:
-   - Username: `your_username`
-   - Password: Generate a secure password (save it!)
-5. Set privileges: **"Read and write to any database"**
-6. Click **"Add User"**
-
-### 4. Configure Network Access
-1. Go to **Network Access** (left sidebar)
-2. Click **"Add IP Address"**
-3. Click **"Allow Access from Anywhere"** (0.0.0.0/0)
-   - This is required for Vercel serverless functions
-4. Click **"Confirm"**
-
-### 5. Get Connection String
-1. Go to **Database** → Click **"Connect"** on your cluster
-2. Choose **"Connect your application"**
-3. Select:
-   - Driver: **Node.js**
-   - Version: **4.1 or later**
-4. Copy the connection string:
-   ```
-   mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
-   ```
-5. Replace:
-   - `<username>` with your database username
-   - `<password>` with your database password
-   - Add database name: `/mental_health_app?` before the query parameters
-
-**Final format:**
-```
-mongodb+srv://your_username:your_password@cluster0.xxxxx.mongodb.net/mental_health_app?retryWrites=true&w=majority
-```
+### Prerequisites
+- Node.js 18+ installed
+- MongoDB Atlas account (or local MongoDB for testing)
+- Git installed
+- Domain name (optional but recommended)
 
 ---
 
-## Part 2: Local Setup
+## 📦 Backend Deployment
 
-### 1. Update Backend .env File
-1. Navigate to `backend/` folder
-2. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
+### Option 1: Deploy to Render (Recommended)
+
+1. **Create Render Account**: https://render.com
+
+2. **Create New Web Service**:
+   - Connect your GitHub repository
+   - Select the `backend` directory
+   - Configure:
+     - **Build Command**: `npm install`
+     - **Start Command**: `npm start`
+     - **Environment**: Node
+
+3. **Set Environment Variables** in Render Dashboard:
    ```
-3. Edit `.env` and add your MongoDB Atlas connection string:
-   ```env
+   NODE_ENV=production
    PORT=3001
-   MONGODB_URI=mongodb+srv://your_username:your_password@cluster0.xxxxx.mongodb.net/mental_health_app?retryWrites=true&w=majority
-   NODE_ENV=development
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/mental_health_app
+   CORS_ORIGIN=https://your-frontend-domain.com
+   RATE_LIMIT_WINDOW_MS=900000
+   RATE_LIMIT_MAX_REQUESTS=100
    ```
 
-### 2. Test Local Connection
-1. Install dependencies:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Start the server:
-   ```bash
-   npm start
-   ```
-3. Check console for: `"Connected to MongoDB"`
-4. Test health endpoint: http://localhost:3001/health
+4. **Deploy**: Render will automatically deploy on push to main branch
+
+### Option 2: Deploy to Railway
+
+1. **Create Railway Account**: https://railway.app
+
+2. **New Project** → **Deploy from GitHub**
+
+3. **Configure**:
+   - Root directory: `backend`
+   - Start command: `npm start`
+
+4. **Add Environment Variables** (same as above)
+
+5. **Deploy**: Automatic on git push
+
+### Option 3: Deploy to Vercel (Serverless)
+
+**Note**: TensorFlow.js may have cold start issues on serverless
+
+1. Install Vercel CLI: `npm i -g vercel`
+
+2. In backend directory: `vercel`
+
+3. Configure `vercel.json` (already included)
+
+4. Set environment variables: `vercel env add`
 
 ---
 
-## Part 3: Deploy Backend to Vercel
+## 🌐 Frontend Deployment
 
-### Method A: Using Vercel CLI (Recommended)
+### Option 1: Deploy to Vercel (Recommended)
 
-1. **Install Vercel CLI globally:**
+1. **Install Vercel CLI**: `npm i -g vercel`
+
+2. **In project root**:
    ```bash
-   npm install -g vercel
-   ```
-
-2. **Login to Vercel:**
-   ```bash
-   vercel login
-   ```
-   - Follow the authentication prompts
-
-3. **Deploy from backend directory:**
-   ```bash
-   cd backend
+   npm run build
    vercel
    ```
 
-4. **Follow the prompts:**
-   - Set up and deploy? → **Y**
-   - Which scope? → Select your account
-   - Link to existing project? → **N** (first time)
-   - Project name? → **got-some-brains-backend**
-   - Directory? → **./backend**
-   - Override settings? → **N**
-
-5. **Add environment variables:**
+3. **Set Environment Variable**:
    ```bash
-   vercel env add MONGODB_URI
+   vercel env add VITE_API_URL
+   # Enter: https://your-backend-domain.com
    ```
-   - Paste your MongoDB Atlas connection string
-   - Select all environments (Production, Preview, Development)
-   
-   ```bash
-   vercel env add NODE_ENV
-   ```
-   - Enter: `production`
-   - Select Production only
 
-6. **Redeploy with environment variables:**
+4. **Deploy**:
    ```bash
    vercel --prod
    ```
 
-7. **Save your deployment URL** (e.g., `https://got-some-brains-backend.vercel.app`)
+### Option 2: Deploy to Netlify
 
-### Method B: Using Vercel Dashboard
+1. **Create Netlify Account**: https://netlify.com
 
-1. **Push code to Git:**
+2. **Connect Repository**:
+   - New site from Git
+   - Select your repository
+
+3. **Build Settings**:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+
+4. **Environment Variables**:
+   - Add `VITE_API_URL` with your backend URL
+
+5. **Deploy**: Automatic on git push
+
+### Option 3: Manual Static Hosting
+
+1. **Build the project**:
    ```bash
-   git add .
-   git commit -m "Add Vercel configuration"
-   git push origin main
+   npm run build
    ```
 
-2. **Import to Vercel:**
-   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
-   - Click **"Add New"** → **"Project"**
-   - Import your Git repository
-   - Configure:
-     - **Framework Preset:** Other
-     - **Root Directory:** `backend`
-     - **Build Command:** (leave empty)
-     - **Output Directory:** (leave empty)
-     - **Install Command:** `npm install`
-
-3. **Add Environment Variables:**
-   - Go to **Settings** → **Environment Variables**
-   - Add:
-     | Name | Value | Environments |
-     |------|-------|--------------|
-     | `MONGODB_URI` | Your Atlas connection string | Production, Preview, Development |
-     | `NODE_ENV` | `production` | Production |
-     | `PORT` | `3001` | All |
-
-4. **Deploy:**
-   - Click **"Deploy"**
-   - Wait for deployment to complete
-   - Copy your deployment URL
+2. **Upload `dist` folder** to any static host:
+   - AWS S3 + CloudFront
+   - GitHub Pages
+   - Firebase Hosting
+   - Cloudflare Pages
 
 ---
 
-## Part 4: Deploy Frontend to Vercel
+## 🗄️ MongoDB Setup
 
-### 1. Update Frontend Environment Variables
+### MongoDB Atlas (Production)
 
-1. Create `.env` in root directory:
-   ```bash
-   cp .env.example .env
+1. **Create Account**: https://www.mongodb.com/cloud/atlas
+
+2. **Create Cluster**:
+   - Choose free tier (M0) for testing
+   - Select region closest to your users
+   - Create cluster
+
+3. **Database Access**:
+   - Create database user
+   - Save username and password
+
+4. **Network Access**:
+   - Add IP: `0.0.0.0/0` (allow from anywhere)
+   - Or add specific IPs for better security
+
+5. **Get Connection String**:
+   - Click "Connect"
+   - Choose "Connect your application"
+   - Copy connection string
+   - Replace `<password>` with your password
+
+6. **Update Backend .env**:
+   ```
+   MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/mental_health_app?retryWrites=true&w=majority
    ```
 
-2. Edit `.env`:
-   ```env
-   VITE_API_URL=https://your-backend.vercel.app
-   ```
-   Replace with your actual backend Vercel URL
+---
 
-### 2. Update Service Files (if needed)
+## 🔐 Security Configuration
 
-The following files should use `import.meta.env.VITE_API_URL`:
-- `src/services/backendService.ts`
-- `src/services/chatService.ts`
-- `src/services/adminService.ts`
+### 1. Environment Variables
 
-Example:
-```typescript
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+**Backend (.env)**:
+```env
+NODE_ENV=production
+PORT=3001
+MONGODB_URI=mongodb+srv://...
+CORS_ORIGIN=https://your-frontend.com
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
-### 3. Deploy Frontend
+**Frontend (.env)**:
+```env
+VITE_API_URL=https://your-backend.com
+```
 
-**Using Vercel CLI:**
+### 2. CORS Configuration
+
+Update `CORS_ORIGIN` in backend .env to match your frontend domain:
+```
+CORS_ORIGIN=https://your-frontend.vercel.app,https://your-custom-domain.com
+```
+
+### 3. Rate Limiting
+
+Adjust based on expected traffic:
+- Development: 100 requests per 15 minutes
+- Production: 50-100 requests per 15 minutes
+- High traffic: Consider Redis-based rate limiting
+
+---
+
+## 📊 Monitoring Setup
+
+### 1. Error Tracking (Sentry)
+
+**Backend**:
 ```bash
-cd ..  # Back to root directory
-vercel
+npm install @sentry/node
 ```
 
-**Using Vercel Dashboard:**
-1. Import repository again
-2. Configure:
-   - **Framework Preset:** Vite
-   - **Root Directory:** `./` (root)
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-3. Add environment variable:
-   - `VITE_API_URL` = Your backend URL
-4. Deploy
-
----
-
-## Part 5: Verify Deployment
-
-### 1. Test Backend Endpoints
-```bash
-# Health check
-curl https://your-backend.vercel.app/health
-
-# Model status
-curl https://your-backend.vercel.app/model/status
-```
-
-### 2. Test Frontend
-1. Visit your frontend URL
-2. Try the assessment flow
-3. Check browser console for errors
-4. Verify data is saved to MongoDB Atlas
-
-### 3. Monitor MongoDB Atlas
-1. Go to MongoDB Atlas dashboard
-2. Click **"Browse Collections"**
-3. Verify data appears in:
-   - `userassessments` collection
-   - `chatrooms` collection
-   - `chatmessages` collection
-
----
-
-## Part 6: Important Notes
-
-### Socket.IO Considerations
-⚠️ **Important:** Vercel serverless functions don't support WebSocket connections (Socket.IO) in the same way as traditional servers.
-
-**Options:**
-1. **Use Vercel for REST API only** and deploy Socket.IO separately:
-   - Deploy chat server to Railway, Render, or Heroku
-   - Keep REST endpoints on Vercel
-
-2. **Use Vercel's real-time features:**
-   - Migrate to Vercel's Edge Functions with streaming
-   - Or use a managed service like Pusher/Ably for real-time features
-
-### CORS Configuration
-Update `server.js` CORS settings for production:
+Add to `server.production.js`:
 ```javascript
-const io = socketIo(server, {
-  cors: {
-    origin: ["https://your-frontend.vercel.app", "http://localhost:5173"],
-    methods: ["GET", "POST"]
-  }
+const Sentry = require("@sentry/node");
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV,
 });
 ```
 
-### Environment Variables Checklist
+**Frontend**:
+```bash
+npm install @sentry/react
+```
 
-**Backend (.env):**
-- ✅ `MONGODB_URI` - MongoDB Atlas connection string
-- ✅ `NODE_ENV` - Set to `production`
-- ✅ `PORT` - Port number (3001)
+### 2. Uptime Monitoring
 
-**Frontend (.env):**
-- ✅ `VITE_API_URL` - Backend Vercel URL
+- **UptimeRobot**: https://uptimerobot.com (Free)
+- **Pingdom**: https://pingdom.com
+- Monitor `/health` endpoint
 
----
+### 3. Performance Monitoring
 
-## Troubleshooting
-
-### MongoDB Connection Issues
-- Verify IP whitelist includes 0.0.0.0/0
-- Check username/password are correct
-- Ensure database name is in connection string
-- Check MongoDB Atlas cluster is running
-
-### Vercel Deployment Issues
-- Check build logs in Vercel dashboard
-- Verify all environment variables are set
-- Ensure `vercel.json` is in backend directory
-- Check Node.js version compatibility
-
-### CORS Errors
-- Update CORS origin in `server.js`
-- Add your frontend URL to allowed origins
-- Clear browser cache and try again
+- **New Relic**: https://newrelic.com
+- **DataDog**: https://datadoghq.com
 
 ---
 
-## Additional Resources
+## 🧪 Pre-Deployment Checklist
 
-- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
-- [Vercel Documentation](https://vercel.com/docs)
-- [Mongoose Documentation](https://mongoosejs.com/docs/)
-- [Vite Environment Variables](https://vitejs.dev/guide/env-and-mode.html)
+### Backend
+- [ ] All environment variables set
+- [ ] MongoDB connection tested
+- [ ] Security middleware installed
+- [ ] Rate limiting configured
+- [ ] Error handling tested
+- [ ] Health endpoint returns 200
+- [ ] CORS configured for production domain
+- [ ] Logs configured (not just console.log)
+
+### Frontend
+- [ ] API URL environment variable set
+- [ ] Build completes without errors
+- [ ] All assessments tested
+- [ ] Chat functionality tested
+- [ ] Admin dashboard tested
+- [ ] Mobile responsive checked
+- [ ] Browser compatibility tested
+
+### Database
+- [ ] MongoDB Atlas cluster created
+- [ ] Database user created
+- [ ] Network access configured
+- [ ] Connection string tested
+- [ ] Backup strategy configured
+
+### Security
+- [ ] No sensitive data in code
+- [ ] All secrets in environment variables
+- [ ] HTTPS enabled (automatic with most hosts)
+- [ ] Rate limiting active
+- [ ] Input validation working
+- [ ] CORS properly configured
 
 ---
 
-## Support
+## 🔄 CI/CD Setup (Optional)
 
-If you encounter issues:
-1. Check Vercel deployment logs
-2. Check MongoDB Atlas metrics
-3. Review browser console errors
-4. Check network tab for failed requests
+### GitHub Actions
 
-Good luck with your deployment! 🚀
+Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: cd backend && npm ci
+      - name: Deploy to Render
+        run: curl ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      - name: Deploy to Vercel
+        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Backend Issues
+
+**MongoDB Connection Failed**:
+```bash
+# Check connection string format
+# Verify IP whitelist in MongoDB Atlas
+# Test with: node -e "require('mongoose').connect('your-uri').then(() => console.log('OK'))"
+```
+
+**TensorFlow.js Errors**:
+```bash
+# Rebuild dependencies
+cd backend
+rm -rf node_modules
+npm install
+```
+
+**Port Already in Use**:
+```bash
+# Windows
+netstat -ano | findstr :3001
+taskkill /PID <PID> /F
+
+# Linux/Mac
+lsof -ti:3001 | xargs kill -9
+```
+
+### Frontend Issues
+
+**API Connection Failed**:
+- Check VITE_API_URL is set correctly
+- Verify CORS is configured on backend
+- Check browser console for errors
+
+**Build Fails**:
+```bash
+# Clear cache and rebuild
+rm -rf node_modules dist
+npm install
+npm run build
+```
+
+---
+
+## 📈 Scaling Considerations
+
+### When to Scale
+
+- **Backend**: > 1000 requests/minute
+- **Database**: > 10GB data or > 100 concurrent connections
+- **Frontend**: > 10,000 daily active users
+
+### Scaling Options
+
+1. **Backend**:
+   - Horizontal scaling (multiple instances)
+   - Load balancer (AWS ALB, Nginx)
+   - Redis for session management
+   - Separate ML service
+
+2. **Database**:
+   - MongoDB Atlas M10+ tier
+   - Read replicas
+   - Sharding for large datasets
+
+3. **Frontend**:
+   - CDN (Cloudflare, CloudFront)
+   - Image optimization
+   - Code splitting
+   - Service workers
+
+---
+
+## 📞 Support
+
+For deployment issues:
+1. Check logs in your hosting platform
+2. Verify all environment variables
+3. Test health endpoint: `curl https://your-backend.com/health`
+4. Check MongoDB connection in Atlas dashboard
+
+---
+
+## 🎉 Post-Deployment
+
+After successful deployment:
+
+1. **Test all features**:
+   - Complete each assessment type
+   - Test chat functionality
+   - Verify admin dashboard
+   - Check database storage
+
+2. **Monitor**:
+   - Set up uptime monitoring
+   - Configure error alerts
+   - Monitor database usage
+
+3. **Optimize**:
+   - Enable caching
+   - Optimize images
+   - Monitor performance metrics
+
+4. **Document**:
+   - Save all credentials securely
+   - Document custom configurations
+   - Create runbook for common issues
+
+---
+
+**Deployment Date**: ___________
+**Backend URL**: ___________
+**Frontend URL**: ___________
+**MongoDB Cluster**: ___________

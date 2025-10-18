@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "NODE_ENV=production node server.production.js",
+    "start:windows": "set NODE_ENV=production && node server.production.js",
     "dev": "node server.js",
+    "dev:production": "node server.production.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,9 +15,16 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@tensorflow/tfjs": "^4.11.0",
+    "@tensorflow/tfjs-backend-cpu": "^4.11.0",
+    "@tensorflow/tfjs-node": "^4.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.1.0",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
     "mongoose": "^7.5.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
